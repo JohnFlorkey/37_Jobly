@@ -96,6 +96,38 @@ describe("GET /companies", function () {
     });
   });
 
+  test("works with filters", async function () {
+    const params = {
+        nameLike: "2"
+    };
+    const resp = await request(app)
+      .get("/companies")
+      .query(params);
+    expect(resp.body).toEqual({
+      companies:
+          [
+            {
+              handle: "c2",
+              name: "C2",
+              description: "Desc2",
+              numEmployees: 2,
+              logoUrl: "http://c2.img",
+            },
+          ],
+    });
+  });
+
+  test("errors when minEmployees greater than maxEmployees", async function () {
+    const params = {
+        minEmployees: 50,
+        maxEmployees: 2
+    };
+    const resp = await request(app)
+      .get("/companies")
+      .query(params);
+    expect(resp.statusCode).toEqual(400);
+  });
+
   test("fails: test next() handler", async function () {
     // there's no normal failure event which will cause this route to fail ---
     // thus making it hard to test that the error-handler works with it. This

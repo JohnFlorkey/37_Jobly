@@ -45,19 +45,47 @@ class Company {
   }
 
   /** Find all companies.
-   *
+   * 
+   * The optional parameter filterCriteria is an object that may contain none, some or all of the following: 
+   * {nameLike: name, minEmployees: integer, maxEmployees: integer}
+   * 
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
-  static async findAll() {
-    const companiesRes = await db.query(
-          `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           ORDER BY name`);
+  static async findAll(filterCriteria) {
+    // if filterCriteria was not passed in create it
+    if (filterCriteria === undefined) {
+      filterCriteria = {
+        nameLike: undefined,
+        minEmployees: undefined,
+        maxEmployees: undefined
+      };
+    }
+    const { nameLike, minEmployees, maxEmployees } = filterCriteria;
+
+    // build where clause
+    let whereClause = '';
+    if (nameLike || minEmployees || maxEmployees) whereClause = ' WHERE 1=1';
+    // use ILIKE for case insensitive string comparison
+    if (nameLike) whereClause += ` AND name ILIKE '%${nameLike}%'`;
+    if (minEmployees) whereClause += ` AND num_Employees >= ${minEmployees}`;
+    if (maxEmployees) whereClause += ` AND num_Employees <= ${maxEmployees}`;
+
+    const selectClause = `
+      SELECT handle,
+        name,
+        description,
+        num_employees AS "numEmployees",
+        logo_url AS "logoUrl"
+      FROM companies`;
+
+    const orderByClause = ` ORDER BY name`;
+    
+    // build the complete query
+    const selectQuery = selectClause + whereClause + orderByClause;
+
+    const companiesRes = await db.query(selectQuery);          
+
     return companiesRes.rows;
   }
 
