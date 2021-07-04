@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The root schema",
+    "examples": [
+        {
+            "title": "Senior Developer",
+            "salary": 100000,
+            "equity": 0.01,
+            "company_handle": "companyco"
+        }
+    ],
+    "required": [
+        "title",
+        "companyHandle"
+    ],
+    "properties": {
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "salary": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "equity": {
+            "type": "number",
+            "maximum": 1
+        },
+        "companyHandle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 25
+        }
+    },
+    "additionalProperties": true
+}

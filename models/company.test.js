@@ -86,7 +86,6 @@ describe("findAll", function () {
     ]);
   });
   test("works: filter on name", async () => {
-    debugger;
     const filterCriteria = {nameLike: "2"};
     let companies = await Company.findAll(filterCriteria);
     expect(companies).toEqual([
@@ -180,7 +179,7 @@ describe("findAll", function () {
 /************************************** get */
 
 describe("get", function () {
-  test("works", async function () {
+  test("works, company with job(s)", async function () {
     let company = await Company.get("c1");
     expect(company).toEqual({
       handle: "c1",
@@ -188,6 +187,26 @@ describe("get", function () {
       description: "Desc1",
       numEmployees: 1,
       logoUrl: "http://c1.img",
+      jobs: [
+        {
+          id: expect.any(Number),
+          title: "job1",
+          salary: 1,
+          equity: "0.1",
+          companyHandle: "c1"
+        }
+      ]
+    });
+  });
+  test("works, company without job(s)", async function () {
+    let company = await Company.get("c3");
+    expect(company).toEqual({
+      handle: "c3",
+      name: "C3",
+      description: "Desc3",
+      numEmployees: 3,
+      logoUrl: "http://c3.img",
+      jobs: []
     });
   });
 

@@ -65,11 +65,25 @@ class Company {
 
     // build where clause
     let whereClause = '';
+    let index = 1;
+    const values = [];
     if (nameLike || minEmployees || maxEmployees) whereClause = ' WHERE 1=1';
     // use ILIKE for case insensitive string comparison
-    if (nameLike) whereClause += ` AND name ILIKE '%${nameLike}%'`;
-    if (minEmployees) whereClause += ` AND num_Employees >= ${minEmployees}`;
-    if (maxEmployees) whereClause += ` AND num_Employees <= ${maxEmployees}`;
+    if (nameLike) {
+      whereClause += ` AND name ILIKE $${index}`;
+      index += 1;
+      values.push(`%${nameLike}%`);
+    }
+    if (minEmployees) {
+      whereClause += ` AND num_Employees >= $${index}`;
+      index += 1;
+      values.push(minEmployees);
+    }
+    if (maxEmployees) {
+      whereClause += ` AND num_Employees <= $${index}`;
+      index += 1;
+      values.push(maxEmployees)
+    }
 
     const selectClause = `
       SELECT handle,
@@ -84,7 +98,7 @@ class Company {
     // build the complete query
     const selectQuery = selectClause + whereClause + orderByClause;
 
-    const companiesRes = await db.query(selectQuery);          
+    const companiesRes = await db.query(selectQuery, values);          
 
     return companiesRes.rows;
   }
@@ -98,19 +112,32 @@ class Company {
    **/
 
   static async get(handle) {
-    const companyRes = await db.query(
-          `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           WHERE handle = $1`,
-        [handle]);
+    const companyPromise = db.query(
+        `SELECT handle,
+                name,
+                description,
+                num_employees AS "numEmployees",
+                logo_url AS "logoUrl"
+          FROM companies
+          WHERE handle = $1`,
+      [handle]);
+    const jobsPromise = db.query(
+        `SELECT id,
+                title,
+                salary,
+                equity,
+                company_handle AS "companyHandle"
+        FROM jobs
+        WHERE company_handle = $1`,
+      [handle]);
 
+    let companyRes = await companyPromise;
     const company = companyRes.rows[0];
-
     if (!company) throw new NotFoundError(`No company: ${handle}`);
+
+    const jobsRes = await jobsPromise;
+    const jobs = jobsRes.rows;
+    company.jobs = jobs;
 
     return company;
   }
