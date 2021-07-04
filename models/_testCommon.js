@@ -36,6 +36,16 @@ async function commonBeforeAll() {
             ('job2', 2, 0.2, 'c2')`);
 }
 
+async function getJobIdByTitle(title) {
+  const job = await db.query(`
+    SELECT id
+    FROM jobs
+    WHERE title = $1`,
+    [title]);
+  
+  return job.rows[0].id;
+}
+
 async function commonBeforeEach() {
   await db.query("BEGIN");
 }
@@ -54,4 +64,5 @@ module.exports = {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  getJobIdByTitle
 };

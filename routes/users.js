@@ -6,11 +6,12 @@ const jsonschema = require("jsonschema");
 
 const express = require("express");
 const { ensureLoggedIn, ensureAdmin, ensureSameUserOrAdmin } = require("../middleware/auth");
-const { BadRequestError } = require("../expressError");
+const { BadRequestError, NotFoundError } = require("../expressError");
 const User = require("../models/user");
 const { createToken } = require("../helpers/tokens");
 const userNewSchema = require("../schemas/userNew.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
+const jobApplicationNewSchema = require("../schemas/jobApplicationNew.json");
 
 const router = express.Router();
 
@@ -42,6 +43,38 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
     return next(err);
   }
 });
+
+
+/** POST /:userId/jobs/:jobId 
+ * 
+ * Creates an application for the specified user and job.
+ * 
+ * Returns { application: { username, jobId } }
+ * 
+ * Authorization: same user or admin
+*/
+
+router.post("/:username/jobs/:jobId", ensureLoggedIn, ensureSameUserOrAdmin, async function(req, res, next) {
+  debugger;
+  try {
+    const jobApplicationParams = { 
+      username: req.params.username, 
+      jobId: parseInt(req.params.jobId)
+    };
+    // validate user submitted data
+    const validator = jsonschema.validate(jobApplicationParams, jobApplicationNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+    
+    // create the application
+    const jobApplication =  await User.apply(jobApplicationParams.username, jobApplicationParams.jobId);
+    return res.status(201).json( {applied: jobApplication } );
+  } catch (err) {
+    return next(err);
+  }
+})
 
 
 /** GET / => { users: [ {username, firstName, lastName, email }, ... ] }
@@ -83,8 +116,9 @@ router.get("/:username", ensureLoggedIn, ensureSameUserOrAdmin, async function (
  * Data can include:
  *   { firstName, lastName, password, email }
  *
- * Returns { username, firstName, lastName, email, isAdmin }
- *
+ * Returns { username, firstName, lastName, email, isAdmin, jobs: [ jobId, jobId, ... ] }
+ * Where jobs is an array of jobId's the user has applied for.
+ * 
  * Authorization required: login
  **/
 

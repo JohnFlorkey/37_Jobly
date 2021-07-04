@@ -12,6 +12,7 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  getJobIdByTitle
 } = require("./_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -132,7 +133,7 @@ describe("findAll", function () {
 /************************************** get */
 
 describe("get", function () {
-  test("works", async function () {
+  test("works without job applications", async function () {
     let user = await User.get("u1");
     expect(user).toEqual({
       username: "u1",
@@ -140,6 +141,26 @@ describe("get", function () {
       lastName: "U1L",
       email: "u1@email.com",
       isAdmin: false,
+      jobs: []
+    });
+  });
+
+  test("works with job applications", async function () {
+    debugger;
+    const job1Id = await getJobIdByTitle("job1");
+    const job2Id = await getJobIdByTitle("job2");
+    await db.query(`
+      INSERT INTO applications(username, job_id)
+      VALUES  ('u1', ${job1Id}),
+              ('u1', ${job2Id})`);
+    let user = await User.get("u1");
+    expect(user).toEqual({
+      username: "u1",
+      firstName: "U1F",
+      lastName: "U1L",
+      email: "u1@email.com",
+      isAdmin: false,
+      jobs: [job1Id, job2Id]
     });
   });
 
@@ -226,5 +247,23 @@ describe("remove", function () {
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
     }
+  });
+});
+
+/************************************** remove */
+
+describe("apply", function() {
+  test("works", async function() {
+    debugger;
+    const job1Id = await getJobIdByTitle("job1");
+    const application = await User.apply("u1", job1Id);
+    const found = await db.query(`
+      SELECT
+        username,
+        job_id AS "jobId" 
+      FROM applications 
+      WHERE username = 'u1'`);
+    expect(found.rows.length).toEqual(1);
+    expect(found.rows[0]).toEqual({ username: "u1", jobId: job1Id });
   });
 });

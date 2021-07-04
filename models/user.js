@@ -118,13 +118,13 @@ class User {
   /** Given a username, return data about user.
    *
    * Returns { username, first_name, last_name, is_admin, jobs }
-   *   where jobs is { id, title, company_handle, company_name, state }
+   *   where jobs is [ jobId, jobIid, ... ]
    *
    * Throws NotFoundError if user not found.
    **/
 
   static async get(username) {
-    const userRes = await db.query(
+    const userPromise = db.query(
           `SELECT username,
                   first_name AS "firstName",
                   last_name AS "lastName",
@@ -134,10 +134,17 @@ class User {
            WHERE username = $1`,
         [username],
     );
+    const jobsPromise = db.query(
+      `SELECT job_id AS "jobId" FROM applications WHERE username = $1`, [username]
+    );
 
+    const userRes = await userPromise;
     const user = userRes.rows[0];
-
     if (!user) throw new NotFoundError(`No user: ${username}`);
+
+    const jobsRes = await jobsPromise;
+    const jobs = jobsRes.rows.map(j => j.jobId);
+    user.jobs = jobs;
 
     return user;
   }
@@ -203,6 +210,26 @@ class User {
     const user = result.rows[0];
 
     if (!user) throw new NotFoundError(`No user: ${username}`);
+  }
+
+  /** Apply for a job */
+
+  static async apply(username, jobId) {
+    debugger;
+    try {
+      let result = await db.query(
+        `INSERT INTO applications (username, job_id)
+         VALUES ($1, $2)
+         RETURNING username, job_id AS "jobId"`,
+        [username, jobId]
+      );
+
+      const application = result.rows[0];
+  
+      return application;
+    } catch (err) {
+      throw new NotFoundError(`Not Found: Could not find username: ${username} or jobId: ${jobId}`);
+    }
   }
 }
 
