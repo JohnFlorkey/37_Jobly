@@ -166,7 +166,7 @@ describe("GET /companies/:handle", function () {
             id: expect.any(Number),
             title: "job1",
             salary: 1,
-            equity: 0.1,
+            equity: "0.1",
             companyHandle: "c1"
           }
         ]
